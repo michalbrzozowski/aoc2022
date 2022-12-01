@@ -42,8 +42,7 @@ int part_two()
 
     int rows = (int)list_length(input);
     for (int row = 0; row < rows; ++row) {
-        kcal = atoi(input[row]);
-        if (kcal == 0) {
+        if (sscanf_s(input[row], "%d", &kcal) != 1) {
             list_push(elfs, elf);
             elf = 0;
         }
