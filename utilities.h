@@ -28,10 +28,6 @@ typedef uint64_t    u64;
 #define unused(arg) (void) (arg);
 #define num_elements(array) (sizeof((array)) / (sizeof(array[0])))
 
-void bits_to_chars(u64 val, size_t size, char * out_chars, size_t char_size)
-{
-}
-
 void print_bits(u64 val, size_t size)
 {
     char bits[65] = { 0 };

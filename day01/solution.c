@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include "..\utilities.h"
 
 #define input_file "input"
@@ -52,6 +51,7 @@ int part_two()
             elf += kcal;
         }
     }
+    list_push(elfs, elf);
 
     int list_len = (int)list_length(elfs) - 1;
     qsort(elfs, list_length(elfs), sizeof(int), compare);
