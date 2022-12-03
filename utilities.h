@@ -10,7 +10,7 @@ typedef uint8_t     byte;
 typedef int64_t     i64;
 typedef uint64_t    u64;
 
-#define set_bit(value, n) ((value) |= (1<<(n)))
+#define set_bit(value, n) ((value) |= ((u64)1<<(n)))
 #define clear_bit(value, n) ((value) &= ~(1<<(n)))
 #define flip_bit(value, n) ((value) ^= (1<<(n)))
 #define check_bit(value, n) ((value) & (1<<(n)))
@@ -27,6 +27,31 @@ typedef uint64_t    u64;
 #define null_ptr (void*)0
 #define unused(arg) (void) (arg);
 #define num_elements(array) (sizeof((array)) / (sizeof(array[0])))
+
+#if 0
+#include <windows.h>
+
+static u64 hp_counter()
+{
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return counter.QuadPart;
+}
+
+static u64 hp_frequency()
+{
+    static LARGE_INTEGER frequency = {0};
+    if (frequency.QuadPart == 0)
+        QueryPerformanceFrequency(&frequency);
+    return frequency.QuadPart;
+}
+
+static double hp_elapsed(u64 start, u64 stop)
+{
+    return (stop - start) / (double)hp_frequency();
+}
+#endif
+
 
 void print_bits(u64 val, size_t size)
 {
