@@ -7,7 +7,7 @@
 #include <inttypes.h>
 
 typedef uint8_t     byte;
-typedef int64_t     i64;
+typedef uint32_t    u32;
 typedef uint64_t    u64;
 
 #define set_bit(value, n) ((value) |= ((u64)1<<(n)))

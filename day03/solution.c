@@ -1,17 +1,8 @@
 #include "..\utilities.h"
 
-#define input_file "input"
+#include <intrin.h>
 
-u64 find_set_bit_pos(u64 value)
-{
-    u64 pos, bit;
-    pos = bit = 1;
-    while (!(bit & value)) {
-        bit = bit << 1;
-        pos++;
-    }
-    return pos;
-}
+#define input_file "input"
 
 int part_one()
 {
@@ -32,7 +23,9 @@ int part_one()
             int n = input[i][k] - 'A';
             set_bit(compartment_two, n);
         }
-        char item = (char)find_set_bit_pos(compartment_one & compartment_two) + 'A' - 1;
+        u32 count = 0;
+        assert(_BitScanReverse64(&count, compartment_one & compartment_two));
+        char item = (char)count + 'A';
         answer += (item >= 'a' && item <= 'z') ? item - 'a' + 1 : item - 'A' + 27;
     }
 
@@ -54,7 +47,9 @@ int part_two()
             }
         }
 
-        char item = (char)find_set_bit_pos(backpack[0] & backpack[1] & backpack[2]) + 'A' - 1;
+        u32 count = 0;
+        assert(_BitScanReverse64(&count, backpack[0] & backpack[1] & backpack[2]));
+        char item = (char)count + 'A';
         answer += (item >= 'a' && item <= 'z') ? item - 'a' + 1 : item - 'A' + 27;
     }
     release_input(input);
