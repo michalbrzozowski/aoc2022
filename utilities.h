@@ -151,8 +151,8 @@ char** aquire_input(const char* filename)
     char** input = null_ptr;
     assert(fopen_s(&file, filename, "rb") == 0);
 
-    char line[1024];
-    while (fgets(line, 1024, file) != null_ptr) {
+    char line[4096];
+    while (fgets(line, 4096, file) != null_ptr) {
         int i = 0;
         while (line[i] != '\n' && line[i] != '\r' && line[i] != '\0') i++;
         line[i] = 0;
