@@ -40,7 +40,7 @@ int move_rope(int rope_length)
     char** input = aquire_input(input_file);
 
     point* rope = null_ptr;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < rope_length; ++i) {
         list_push(rope, (point) { .x = grid_size / 2, .y = grid_size / 2 });
     }
 
@@ -57,7 +57,7 @@ int move_rope(int rope_length)
                 case 'L': { head->x -= 1; } break;
                 case 'R': { head->x += 1; } break;
             }
-            for (int k = 1; k < 10; ++k) {
+            for (int k = 1; k < rope_length; ++k) {
                 head = &rope[k - 1];
                 point *tail = &rope[k];
 
