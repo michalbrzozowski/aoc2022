@@ -1,8 +1,8 @@
 #include "..\utilities.h"
 
 #define grid_size 99
-
 static u32 grid[grid_size][grid_size];
+
 #define input_file "input"
 
 void fill_grid()
@@ -10,13 +10,11 @@ void fill_grid()
     char** input = aquire_input(input_file);
     assert(grid_size == list_length(input));
 
-
     for (int i = 0; i < list_length(input); ++i) {
         for (int j = 0; j < list_length(input[i]); ++j) {
             grid[i][j] = input[i][j] - '0';
         }
     }
-
     release_input(input);
 }
 
