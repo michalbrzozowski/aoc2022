@@ -64,7 +64,6 @@ static int x_offsets[] = { 1, -1, 0, 0 };
 static int y_offsets[] = { 0, 0, 1, -1 };
 static position* start_positions = null_ptr;
 
-
 void parse_map()
 {
     char** input = aquire_input(input_file);
@@ -83,9 +82,9 @@ void parse_map()
         }
     }
 
-    memset(distancemap, -1, sizeof(distancemap));
-    memset(pathmap, '.', sizeof(pathmap));
-    memset(came_from, -1, sizeof(came_from));
+    heightmap[start.y][start.x] = 'a';
+    heightmap[end.y][end.x] = 'z';
+
     release_input(input);
 }
 
@@ -109,6 +108,7 @@ void print_maps()
     file = null_ptr;
     assert(fopen_s(&file, "pathmap", "w+") == 0);
 
+    memset(pathmap, '.', sizeof(pathmap));
     pathmap[start.y][start.x] = 'S';
     pathmap[end.y][end.x] = 'E';
 
@@ -136,16 +136,14 @@ void print_maps()
     fclose(file);
 }
 
-int part_one()
+int find_path_distance(position from)
 {
-    parse_map();
+    memset(distancemap, -1, sizeof(distancemap));
+    memset(came_from, -1, sizeof(came_from));
 
-    heightmap[start.y][start.x] = 'a';
-    heightmap[end.y][end.x] = 'z';
+    distancemap[from.y][from.x] = 0;
 
-    distancemap[start.y][start.x] = 0;
-
-    frontier_push(start);
+    frontier_push(from);
 
     while (frontier.count > 0) {
         position current = frontier_pop();
@@ -162,57 +160,34 @@ int part_one()
 
             if (distancemap[ny][nx] == -1 && nh - 1 <= ch) {
                 frontier_push((position) { .x = nx, .y = ny });
-                came_from[ny][nx] = current;
                 distancemap[ny][nx] = distancemap[current.y][current.x] + 1;
+                came_from[ny][nx] = current;
             }
         }
     }
+    return distancemap[end.y][end.x];
+}
 
-    // print_maps();
-
-    int answer = distancemap[end.y][end.x];
+int part_one()
+{
+    int answer = find_path_distance(start);
     return answer;
 }
 
 int part_two(int distance)
 {
-    int total_positions = list_length(start_positions);
-    for (int survey = 0; survey < total_positions; ++survey) {
-        memset(distancemap, -1, sizeof(distancemap));
-
-        distancemap[start_positions[survey].y][start_positions[survey].x] = 0;
-        frontier_push(start_positions[survey]);
-
-        while (frontier.count > 0) {
-            position current = frontier_pop();
-
-            for (int i = 0; i < 4; ++i) {
-                int nx = current.x + x_offsets[i];
-                int ny = current.y + y_offsets[i];
-
-                if (nx < 0 || nx >= map_width || ny < 0 || ny >= map_height)
-                    continue;
-
-                byte ch = heightmap[current.y][current.x];
-                byte nh = heightmap[ny][nx];
-
-                if (distancemap[ny][nx] == -1 && nh - 1 <= ch) {
-                    frontier_push((position) { .x = nx, .y = ny });
-                    distancemap[ny][nx] = distancemap[current.y][current.x] + 1;
-                }
-            }
-        }
-        if (distancemap[end.y][end.x] != -1)
-            distance = __min(distance, distancemap[end.y][end.x]);
+    for (int survey = 0; survey < list_length(start_positions); ++survey) {
+        int result = find_path_distance(start_positions[survey]);
+        if (result != -1) distance = __min(distance, result);
     }
-
-    int answer = distance;
-    return answer;
+    return distance;
 }
 
 void main()
 {
+    parse_map();
     int distance = part_one();
+
     printf("%d\n", distance);
     printf("%d\n", part_two(distance));
 }
