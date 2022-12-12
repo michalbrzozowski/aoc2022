@@ -62,6 +62,8 @@ position frontier_pop()
 
 static int x_offsets[] = { 1, -1, 0, 0 };
 static int y_offsets[] = { 0, 0, 1, -1 };
+static position* start_positions = null_ptr;
+
 
 void parse_map()
 {
@@ -72,6 +74,8 @@ void parse_map()
         assert(list_length(input[i]) == map_width);
         for (int j = 0; j < list_length(input[i]); ++j) {
             heightmap[i][j] = input[i][j];
+            if (heightmap[i][j] == 'a')
+                list_push(start_positions, (position) { .x = j, .y = i });
             if (heightmap[i][j] == 'S')
                 start = (position){ .x = j, .y = i };
             if (heightmap[i][j] == 'E')
@@ -164,23 +168,51 @@ int part_one()
         }
     }
 
-    print_maps();
+    // print_maps();
 
     int answer = distancemap[end.y][end.x];
     return answer;
 }
 
-int part_two()
+int part_two(int distance)
 {
-    int answer = 0;
-    char** input = aquire_input(input_file);
+    int total_positions = list_length(start_positions);
+    for (int survey = 0; survey < total_positions; ++survey) {
+        memset(distancemap, -1, sizeof(distancemap));
 
-    release_input(input);
+        distancemap[start_positions[survey].y][start_positions[survey].x] = 0;
+        frontier_push(start_positions[survey]);
+
+        while (frontier.count > 0) {
+            position current = frontier_pop();
+
+            for (int i = 0; i < 4; ++i) {
+                int nx = current.x + x_offsets[i];
+                int ny = current.y + y_offsets[i];
+
+                if (nx < 0 || nx >= map_width || ny < 0 || ny >= map_height)
+                    continue;
+
+                byte ch = heightmap[current.y][current.x];
+                byte nh = heightmap[ny][nx];
+
+                if (distancemap[ny][nx] == -1 && nh - 1 <= ch) {
+                    frontier_push((position) { .x = nx, .y = ny });
+                    distancemap[ny][nx] = distancemap[current.y][current.x] + 1;
+                }
+            }
+        }
+        if (distancemap[end.y][end.x] != -1)
+            distance = __min(distance, distancemap[end.y][end.x]);
+    }
+
+    int answer = distance;
     return answer;
 }
 
 void main()
 {
-    printf("%d\n", part_one());
-    printf("%d\n", part_two());
+    int distance = part_one();
+    printf("%d\n", distance);
+    printf("%d\n", part_two(distance));
 }
