@@ -153,26 +153,44 @@ void calculate_distances(int from)
     }
 }
 
-int find_max_path(int current, int time, u64 valve_list)
+int find_max_path(int current, int time, u64 valve_list, int elephant)
 {
     clear_bit(valve_list, current);
 
     if (time <= 1) return 0;
 
     int pressure = 0;
+    if (elephant >= 0) {
+        pressure = find_max_path(elephant , 26, valve_list, -1);
+    }
+
     for (u64 mask = valve_list; mask != 0; mask &= mask - 1) {
         u32 id = 0;
         _BitScanForward64(&id, mask);
 
         if (pipe_graph.distances[current][id] < time) {
             int time_left = time - pipe_graph.distances[current][id] - 1;
-            pressure = __max(pressure, time_left * pipe_graph.flow_rate[id] + find_max_path(id, time_left, valve_list));
+            pressure = __max(pressure, time_left * pipe_graph.flow_rate[id] + find_max_path(id, time_left, valve_list, elephant));
         }
     }
     return pressure;
 }
 
-int part_one()
+int part_one(u64 valve_list)
+{
+    int answer = find_max_path(lookup_or_add("AA"), 30, valve_list, -1);
+    return answer;
+}
+
+int part_two(u64 valve_list)
+{
+    int start = lookup_or_add("AA");
+    int answer = find_max_path(start, 26, valve_list, start);
+
+    return answer;
+}
+
+void main()
 {
     parse_input();
 
@@ -187,32 +205,6 @@ int part_one()
     }
     assert(__popcnt64(valve_list) == count);
 
-#if 0
-    for (int i = 0; i < pipe_graph.nodes; ++i) {
-        for (int j = 0; j < pipe_graph.nodes; ++j) {
-            printf("%.3d ", pipe_graph.distances[i][j]);
-        }
-        printf("\n");
-    }
-#endif
-
-
-    int answer = find_max_path(lookup_or_add("AA"), 30, valve_list);
-
-    return answer;
-}
-
-int part_two()
-{
-    int answer = 0;
-    char** input = aquire_input(input_file);
-
-    release_input(input);
-    return answer;
-}
-
-void main()
-{
-    printf("%d\n", part_one());
-    printf("%d\n", part_two());
+    printf("%d\n", part_one(valve_list));
+    printf("%d\n", part_two(valve_list));
 }
