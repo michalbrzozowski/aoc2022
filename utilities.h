@@ -7,11 +7,12 @@
 #include <inttypes.h>
 
 typedef uint8_t     byte;
+typedef uint16_t    u16;
 typedef uint32_t    u32;
 typedef uint64_t    u64;
 
 #define set_bit(value, n) ((value) |= ((u64)1<<(n)))
-#define clear_bit(value, n) ((value) &= ~(1<<(n)))
+#define clear_bit(value, n) ((value) &= ~((u64)1<<(n)))
 #define flip_bit(value, n) ((value) ^= (1<<(n)))
 #define check_bit(value, n) ((value) & (1<<(n)))
 
