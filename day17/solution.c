@@ -9,7 +9,6 @@ typedef struct int2 {
 
 typedef struct rock {
     int height;
-    int offset;
     int parts_count;
     int2 parts[5];
 } rock;
@@ -73,19 +72,21 @@ static byte* jet_pattern;
 
 typedef struct game_data {
     rock *active_rock;
-    u64 rocks_at_rest;
+    int x;
 
     // simulation
     u64 top;
     u64 bottom;
+    u64 tunnel_offset;
 
     u64 highest_point;
-    int jet_pattern;
 
-    u64 bottom_y[8];
+    u64 bottom_y[7];
+    byte found_repetition;
     byte bottom_mask;
 
-    u64 rock_it;
+    u64 jit;
+    u64 rit;
 } game_data;
 
 static game_data game;
@@ -96,12 +97,14 @@ static byte tunnel[tunnel_depth][tunnel_width];
 
 byte read_tunnel_at(u64 x, u64 y)
 {
-    return tunnel[y % tunnel_depth][x];
+    u64 yd = y - game.tunnel_offset;
+    return tunnel[yd % tunnel_depth][x];
 }
 
 void write_tunnel_at(byte data, u64 x, u64 y)
 {
-    tunnel[y % tunnel_depth][x] = data;
+    u64 yd = y - game.tunnel_offset;
+    tunnel[yd % tunnel_depth][x] = data;
 }
 
 /*
@@ -161,7 +164,7 @@ void print_tunnel_part(int top, int bottom)
 
 void print_tunnel()
 {
-    u64 xd = game.active_rock ? game.active_rock->offset : 0;
+    u64 xd = game.x;
     u64 yd = game.top;
     if (game.active_rock) {
         for (int i = 0; i < game.active_rock->parts_count; ++i) {
@@ -188,90 +191,140 @@ void print_tunnel()
 void spawn_rock()
 {
     // pick next rock to be spawned and set it to active rock
-    int num_rocks = num_elements(rocks);
-    int it = game.rock_it++ % num_rocks;
-    game.active_rock = &rocks[it];
-
+    game.active_rock = &rocks[game.rit % num_elements(rocks)];
     game.top = 3 + game.highest_point + game.active_rock->height;
+
     for (u64 y = game.highest_point + 1; y <= game.top; ++y) {
-        write_tunnel_at('|', 0, y);
         for (int x = 1; x < tunnel_width - 1; ++x) {
             write_tunnel_at('.', x, y);
         }
-        write_tunnel_at('|', tunnel_width - 1, y);
     }
-
-    game.active_rock->offset = 3;
-    // its left edge is two units away from the left wall and its bottom edge is 
-    // three units above the highest rock in the room (or the floor, if there isn't one).
+    game.x = 3;
 }
 
 int check_and_move(int2 direction)
 {
-    int x = game.active_rock->offset + direction.x;
-    u64 y = game.top + direction.y;
+    int x = game.x + direction.x;
+    u64 y = (game.top + direction.y);
 
     for (int i = 0; i < game.active_rock->parts_count; ++i) {
         u64 yd = y - game.active_rock->parts[i].y;
         int xd = x + game.active_rock->parts[i].x;
-        char tunnel_part = read_tunnel_at(xd, yd);
-        if (tunnel_part != '.')
+
+         if (xd > 0 && xd < 8 && yd > 0) {
+            char tunnel_part = read_tunnel_at(xd, yd);
+            // if (tunnel_part != '.' && tunnel_part != ' ')
+            if (tunnel_part == '#')
+                return 0;
+        }
+        else
             return 0;
     }
-    game.active_rock->offset = x;
+    game.x = x;
     game.top = y;
     return 1;
 }
 
-typedef struct history {
+typedef struct observation {
     int topology[7];
-    int rock_id;
-    int stream_id;
-} history;
+    u64 rid;
+    u64 jid;
+    u64 top;
+} observation;
 
-static history history_buffer;
+
+#define max_history 1024
+static int history_count;
+static observation history[max_history];
+
+int has_observation(observation item)
+{
+    int num_rocks = num_elements(rocks);
+    for (int i = 0; i < history_count; ++i) {
+        if (history[i].rid % num_rocks == item.rid % num_rocks &&
+            history[i].jid == item.jid) {
+            for (int j = 0; j < 7; ++j) {
+                if (history[i].topology[j] != item.topology[j])
+                    return 0;
+            }
+            return i;
+        }
+    }
+    return 0;
+}
 
 int step_simulation(u64 threshold)
 {
-    if (game.rocks_at_rest == threshold)
+    if (game.rit == threshold)
         return 0;
 
     if (!game.active_rock) {
         spawn_rock();
     }
 
-    // read jet pattern
-    int total_patterns = (int)list_length(jet_pattern);
-    int pid = game.jet_pattern++ % total_patterns;
-    int cmd = jet_pattern[pid] == '<' ? -1 : 1;
+    do {
+        // read jet pattern
+        int cmd = jet_pattern[game.jit++ % list_length(jet_pattern)] == '<' ? -1 : 1;
+        // jet pattern move & rock falls 1 unit
+        check_and_move((int2) { .x = cmd });
+    } while (check_and_move((int2) { .y = -1 }));
 
-    // jet pattern move
-    check_and_move((int2) { .x = cmd });
+    // rest at rock
+    int xd = game.x;
+    u64 yd = game.top;
 
-    // rock falls 1 unit
-    if (!check_and_move((int2) { .y = -1 })) {
-        int xd = game.active_rock->offset;
-        u64 yd = game.top;
-        for (int i = 0; i < game.active_rock->parts_count; ++i) {
-            int x = xd + game.active_rock->parts[i].x;
-            write_tunnel_at('#', x, yd - game.active_rock->parts[i].y);
+    for (int i = 0; i < game.active_rock->parts_count; ++i) {
+        int x = xd + game.active_rock->parts[i].x;
+        write_tunnel_at('#', x, yd - game.active_rock->parts[i].y);
 
+        if (!game.found_repetition) {
             if (!check_bit(game.bottom_mask, x)) {
                 set_bit(game.bottom_mask, x);
             }
-            game.bottom_y[x] = __max(game.bottom_y[x], yd - game.active_rock->parts[i].y);
+            game.bottom_y[x - 1] = __max(game.bottom_y[x - 1], yd - game.active_rock->parts[i].y);
         }
-        game.highest_point = game.top > game.highest_point ? game.top : game.highest_point;
-        game.active_rock = null_ptr;
-        game.rocks_at_rest++;
     }
-    if (game.bottom_mask == 0xfe) {
-        u64 min_y = game.bottom_y[1];
-        for (int i = 2; i < 8; ++i) {
+
+    game.highest_point = game.top > game.highest_point ? game.top : game.highest_point;
+    game.active_rock = null_ptr;
+    game.rit++;
+
+    if (!game.found_repetition && game.bottom_mask == 0xfe) {
+        u64 min_y = game.bottom_y[0];
+        for (int i = 0; i < 7; ++i) {
             min_y = __min(min_y, game.bottom_y[i]);
         }
 
-        // printf("diff %"PRIu64" rock: %"PRIu64", windidx %d\n", min_y - game.bottom, game.rock_it % 5, game.jet_pattern % (int)list_length(jet_pattern));
+        observation current = {
+            .top = game.highest_point,
+            .jid = game.jit % list_length(jet_pattern),
+            .rid = game.rit
+        };
+        for (int i = 0; i < 7; ++i) {
+            current.topology[i] = game.bottom_y[i] - game.bottom;
+        }
+
+        int index = 0;
+        if (!(index = has_observation(current))) {
+            history[history_count++] = current;
+        }
+        else {
+            observation prev = history[index];
+
+            u64 distance = current.rid - prev.rid;
+            u64 height = current.top - prev.top;
+            u64 left_to_drop = (threshold - current.rid);
+
+            u64 cycles = left_to_drop / distance;
+            u64 gain_in_height = cycles * height;
+            u64 game_rock_it = game.rit + cycles * distance;
+
+            game.tunnel_offset = gain_in_height;
+            game.rit = game_rock_it;
+
+            game.highest_point += gain_in_height;
+            game.found_repetition = 1;
+        }
 
         game.bottom = min_y;
         game.bottom_mask = 0;
@@ -312,6 +365,8 @@ u64 part_one()
     while (step_simulation(2022));
     answer = game.highest_point;
 
+    // assert(3068 == answer);
+
     return answer;
 }
 
@@ -321,6 +376,8 @@ u64 part_two()
 
     while (step_simulation(1000000000000));
     answer = game.highest_point;
+
+    assert(answer == 1585673352422); // 1585673355287);
 
     return answer;
 }
