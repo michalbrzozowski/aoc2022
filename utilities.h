@@ -10,6 +10,7 @@ typedef uint8_t     byte;
 typedef uint16_t    u16;
 typedef uint32_t    u32;
 typedef uint64_t    u64;
+typedef int64_t     i64;
 
 #define set_bit(value, n) ((value) |= ((u64)1<<(n)))
 #define clear_bit(value, n) ((value) &= ~((u64)1<<(n)))
@@ -152,8 +153,8 @@ char** aquire_input(const char* filename)
     char** input = null_ptr;
     assert(fopen_s(&file, filename, "rb") == 0);
 
-    char line[4096];
-    while (fgets(line, 4096, file) != null_ptr) {
+    char line[8192];
+    while (fgets(line, 8192, file) != null_ptr) {
         int i = 0;
         while (line[i] != '\n' && line[i] != '\r' && line[i] != '\0') i++;
         line[i] = 0;
