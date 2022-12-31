@@ -57,7 +57,6 @@ int mod(int x, int n)
 
 int part_one()
 {
-    parse_input();
     int r = 0;
     int c = 0;
 
@@ -80,8 +79,6 @@ int part_one()
             for (int step = 0; step < next; ++step) {
                 int dx = (c + directions[forward].x) % map_width;
                 int dy = (r + directions[forward].y) % map_height;
-                // int dx = mod(c + directions[forward].x, map_width);
-                // int dy = mod(r + directions[forward].y, map_height);
 
                 if (forward == right && (dx >= map_width || map[dy][dx] == ' ')) {
                     for (dx = 0; map[dy][dx] == ' '; ++dx);
@@ -154,6 +151,7 @@ int3 wrap(int x, int y, int direction)
             direction == wrap_table[wi][0].z)
             break;
     }
+    assert(wi != wrap_table_length);
 
     if (direction == up && wrap_table[wi][1].z == right) {
         next.x = wrap_table[wi][1].x * square_size;
@@ -181,7 +179,7 @@ int3 wrap(int x, int y, int direction)
     }
     else if (direction == left && wrap_table[wi][1].z == right) {
         next.x = wrap_table[wi][1].x * square_size;
-        next.y = (wrap_table[wi][1].y * square_size + square_size - 1) - (y % square_size);
+        next.y = (wrap_table[wi][1].y * square_size + (square_size - 1)) - (y % square_size);
     }
     else if (direction == left && wrap_table[wi][1].z == down) {
         next.x = wrap_table[wi][1].x * square_size + (y % square_size);
@@ -194,7 +192,6 @@ int3 wrap(int x, int y, int direction)
 
 int part_two()
 {
-    parse_input();
     int r = 0;
     int c = 0;
 
@@ -202,47 +199,52 @@ int part_two()
 
     int forward = 0;
     for (int i = 0; i < list_length(path); ++i) {
-        int next = path[i];
+        int cmd = path[i];
 
-       if (next < 0) {
-            forward = mod(forward + next, 4);
+        if (cmd < 0) {
+            forward = mod(forward + cmd, 4);
+            continue;
         }
-        else {
-            for (int step = 0; step < next; ++step) {
-                int dx = (c + directions[forward].x) % map_width;
-                int dy = (r + directions[forward].y) % map_height;
+        for (int step = 0; step < cmd; ++step) {
+            int dx = (c + directions[forward].x);
+            int dy = (r + directions[forward].y);
+            int df = forward;
 
-                if (forward == right && (dx >= map_width || map[dy][dx] == ' ')) {
-                    int3 next = wrap(c, r, forward);
-                    dx = next.x;
-                    dy = next.y;
-                    forward = next.z;
-                }
-                else if (forward == left && (dx < 0 || map[dy][dx] == ' ')) {
-                    int3 next = wrap(c, r, forward);
-                    dx = next.x;
-                    dy = next.y;
-                    forward = next.z;
-                }
-                else if (forward == down && (dy >= map_height || map[dy][dx] == ' ')) {
-                    int3 next = wrap(c, r, forward);
-                    dx = next.x;
-                    dy = next.y;
-                    forward = next.z;
-                }
-                else if (forward == up && (dy < 0 || map[dy][dx] == ' ')) {
-                    int3 next = wrap(c, r, forward);
-                    dx = next.x;
-                    dy = next.y;
-                    forward = next.z;
-                }
+            if (forward == right && (dx >= map_width || map[dy][dx] == ' ')) {
+                int3 next = wrap(c, r, forward);
+                dx = next.x;
+                dy = next.y;
+                df = next.z;
 
-                if (map[dy][dx] == '#') {
-                    break;
-                }
-                r = dy;
-                c = dx;
             }
+            else if (forward == left && (dx < 0 || map[dy][dx] == ' ')) {
+                int3 next = wrap(c, r, forward);
+                dx = next.x;
+                dy = next.y;
+                df = next.z;
+            }
+            else if (forward == down && (dy >= map_height || map[dy][dx] == ' ')) {
+                int3 next = wrap(c, r, forward);
+                dx = next.x;
+                dy = next.y;
+                df = next.z;
+            }
+            else if (forward == up && (dy < 0 || map[dy][dx] == ' ')) {
+                int3 next = wrap(c, r, forward);
+                dx = next.x;
+                dy = next.y;
+                df = next.z;
+            }
+
+            if (map[dy][dx] == '#') {
+                break;
+            }
+
+            if (map[dy][dx] == ' ') assert(0);
+
+            r = dy;
+            c = dx;
+            forward = df;
         }
     }
 
@@ -255,7 +257,8 @@ int part_two()
 
 void main()
 {
-    // printf("%d\n", part_one());
+    parse_input();
+    printf("%d\n", part_one());
     printf("%d\n", part_two());
 
     list_free(path);
