@@ -37,6 +37,8 @@ void parse_input()
     release_input(input);
 }
 
+#define square_size 50
+
 typedef struct int2 {
     int x;
     int y;
@@ -136,7 +138,6 @@ static int3 wrap_table[][2] = {
     {{.y = 3, .x = 0, .z = left}, {.y = 0, .x = 1 , .z = down}}
 };
 
-#define square_size 50
 
 int3 wrap(int x, int y, int direction)
 {

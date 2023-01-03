@@ -181,7 +181,6 @@ void print_tunnel()
 
     if (game.active_rock) {
         for (int i = 0; i < game.active_rock->parts_count; ++i) {
-            // tunnel[yd - game.active_rock->parts[i].y][xd + game.active_rock->parts[i].x] = '.';
             write_tunnel_at('.', xd + game.active_rock->parts[i].x, yd - game.active_rock->parts[i].y);
         }
     }
@@ -213,7 +212,6 @@ int check_and_move(int2 direction)
 
          if (xd > 0 && xd < 8 && yd > 0) {
             char tunnel_part = read_tunnel_at(xd, yd);
-            // if (tunnel_part != '.' && tunnel_part != ' ')
             if (tunnel_part == '#')
                 return 0;
         }
@@ -365,8 +363,6 @@ u64 part_one()
     while (step_simulation(2022));
     answer = game.highest_point;
 
-    // assert(3068 == answer);
-
     return answer;
 }
 
@@ -376,8 +372,6 @@ u64 part_two()
 
     while (step_simulation(1000000000000));
     answer = game.highest_point;
-
-    assert(answer == 1585673352422); // 1585673355287);
 
     return answer;
 }
